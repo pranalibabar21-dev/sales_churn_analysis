@@ -53,7 +53,58 @@ if not os.path.exists(UPLOAD_FOLDER):
 if not os.path.exists("static"):
 
     os.makedirs("static")
+import sqlite3
+from werkzeug.security import generate_password_hash
 
+conn = sqlite3.connect(
+    "users.db",
+    check_same_thread=False
+)
+
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users(
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    username TEXT UNIQUE,
+
+    password TEXT,
+
+    role TEXT
+)
+""")
+
+conn.commit()
+
+cursor.execute(
+    "SELECT * FROM users WHERE username=?",
+    ("admin",)
+)
+
+admin = cursor.fetchone()
+
+if not admin:
+
+    cursor.execute(
+        """
+        INSERT INTO users
+        (username,password,role)
+        VALUES(?,?,?)
+        """,
+        (
+            "admin",
+            generate_password_hash(
+                "admin123"
+            ),
+            "admin"
+        )
+    )
+
+    conn.commit()
+
+conn.close()
 # =========================================
 # DATABASE CONNECTION
 # =========================================
