@@ -1,59 +1,149 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-    <title>Login</title>
+    <meta charset="UTF-8">
 
-    <link rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Login
+    </title>
+
+    <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet">
+
+    <style>
+
+        body{
+
+            background-image:
+            url("{{ url_for('static',
+            filename='background.jpg') }}");
+
+            background-size: cover;
+
+            background-position: center;
+
+            background-repeat: no-repeat;
+
+            height: 100vh;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+        }
+
+        .login-card{
+
+            width: 450px;
+
+            background: rgba(
+                255,
+                255,
+                255,
+                0.95
+            );
+
+            border-radius: 15px;
+
+            padding: 30px;
+
+            box-shadow:
+            0px 0px 20px
+            rgba(0,0,0,0.3);
+        }
+
+    </style>
 
 </head>
 
 <body>
 
-    <div class="container">
+<div class="login-card">
 
-        <h1>Customer Sales and Churn Analysis System</h1>
+    <h2 class="text-center">
 
-        <div class="login-box">
+        Customer Sales &
+        Churn Analysis
 
-            <h2>Login</h2>
+    </h2>
 
-            <form method="POST">
+    <hr>
 
-                <input type="text"
-                    name="username"
-                    placeholder="Enter Username"
-                    required>
+    <form
+    action="/login"
+    method="POST">
 
-                <input type="password"
-                    name="password"
-                    placeholder="Enter Password"
-                    required>
+        <label>
 
-                <button type="submit">
-                    Login
-                </button>
+            Username
 
-            </form>
-            <br><br>
+        </label>
 
-<a href="/register">
-    Create New Account
-</a>
+        <input
+        type="text"
+        name="username"
+        class="form-control"
+        required>
 
-            {% if error %}
+        <br>
 
-                <p class="error">
-                    {{ error }}
-                </p>
+        <label>
 
-            {% endif %}
+            Password
 
-        </div>
+        </label>
+
+        <input
+        type="password"
+        name="password"
+        class="form-control"
+        required>
+
+        <br>
+
+        <button
+        type="submit"
+        class="btn btn-primary w-100">
+
+            Login
+
+        </button>
+
+    </form>
+
+    <hr>
+
+    <div class="text-center">
+
+        <a href="/register"
+           class="btn btn-success">
+
+            Register
+
+        </a>
 
     </div>
+
+    <br>
+
+    <div class="text-center">
+
+        <small>
+
+            MCA Final Year Project
+
+        </small>
+
+    </div>
+
+</div>
 
 </body>
 

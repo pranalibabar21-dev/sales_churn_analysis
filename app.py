@@ -1,28 +1,63 @@
-from flask import Flask, render_template, request, redirect, session
+# =========================================
+# IMPORTS
+# =========================================
+
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    session,
+    send_file
+)
+
 import pandas as pd
 import sqlite3
-import matplotlib
+import os
 
+import matplotlib
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.cluster import KMeans
 from sklearn.metrics import r2_score
 
-from reportlab.pdfgen import canvas
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
 
-# ----------------------------------------------------
-# FLASK APP
-# ----------------------------------------------------
+from reportlab.pdfgen import canvas
+from datetime import datetime
+# =========================================
+# APP CONFIG
+# =========================================
+
 app = Flask(__name__)
 
 app.secret_key = "secret123"
 
-# ----------------------------------------------------
-# DATABASE
-# ----------------------------------------------------
+UPLOAD_FOLDER = "uploads"
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# Create upload folder if not exists
+if not os.path.exists(UPLOAD_FOLDER):
+
+    os.makedirs(UPLOAD_FOLDER)
+
+# Create static folder if not exists
+if not os.path.exists("static"):
+
+    os.makedirs("static")
+
+# =========================================
+# DATABASE CONNECTION
+# =========================================
+
 conn = sqlite3.connect(
     "users.db",
     check_same_thread=False
@@ -30,32 +65,53 @@ conn = sqlite3.connect(
 
 cursor = conn.cursor()
 
-# ----------------------------------------------------
-# CREATE TABLE
-# ----------------------------------------------------
-cursor.execute(
-    '''
-    CREATE TABLE IF NOT EXISTS users(
+# =========================================
+# USERS TABLE
+# =========================================
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users(
 
-        username TEXT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        password TEXT,
+    username TEXT UNIQUE,
 
-        role TEXT
-    )
-    '''
+    password TEXT,
+
+    role TEXT
 )
+""")
+
+conn.commit()
+# =========================================
+# ACTIVITY LOG TABLE
+# =========================================
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS activity_logs(
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    username TEXT,
+
+    activity TEXT,
+
+    timestamp TEXT
+)
+""")
 
 conn.commit()
 
-# ----------------------------------------------------
-# DEFAULT ADMIN
-# ----------------------------------------------------
+# =========================================
+# DEFAULT ADMIN ACCOUNT
+# =========================================
+
 cursor.execute(
-    "SELECT * FROM users WHERE username=?",
-    ("admin",)
+"""
+SELECT * FROM users
+WHERE username=?
+""",
+("admin",)
 )
 
 admin = cursor.fetchone()
@@ -63,256 +119,619 @@ admin = cursor.fetchone()
 if not admin:
 
     cursor.execute(
-
-        "INSERT INTO users(username, password, role) VALUES(?, ?, ?)",
-
-        ("admin", "admin123", "admin")
+        """
+        INSERT INTO users(
+            username,
+            password,
+            role
+        )
+        VALUES (?, ?, ?)
+        """,
+        (
+            "admin",
+            generate_password_hash(
+                "admin123"
+            ),
+            "admin"
+        )
     )
 
     conn.commit()
 
-# ----------------------------------------------------
-# LOAD DATA
-# ----------------------------------------------------
-sales_data = pd.read_csv(
-    "sales_data.csv"
-)
+# =========================================
+# HELPER FUNCTION
+# LOAD DATASET AFTER UPLOAD
+# =========================================
 
-customer_data = pd.read_csv(
-    "customer_data.csv"
-)
+def load_data():
 
-# ----------------------------------------------------
-# DATE
-# ----------------------------------------------------
-sales_data['Date'] = pd.to_datetime(
-    sales_data['Date']
-)
+    sales_file = os.path.join(
+        "uploads",
+        "sales_data.csv"
+    )
 
-# ----------------------------------------------------
-# KPI
-# ----------------------------------------------------
-total_sales = round(
+    customer_file = os.path.join(
+        "uploads",
+        "customer_data.csv"
+    )
 
-    sales_data['Total_Sales'].sum(),
+    if not os.path.exists(sales_file):
 
-    2
-)
+        return None, None
 
-total_customers = sales_data[
-    'Customer_ID'
-].nunique()
+    if not os.path.exists(customer_file):
 
-top_product = sales_data.groupby(
-    'Product'
-)['Total_Sales'].sum().idxmax()
+        return None, None
 
-# ----------------------------------------------------
-# ML MODEL
-# ----------------------------------------------------
-X = sales_data[['Quantity', 'Price']]
+    sales_data = pd.read_csv(
+        sales_file
+    )
 
-y = sales_data['Total_Sales']
+    customer_data = pd.read_csv(
+        customer_file
+    )
 
-X_train, X_test, y_train, y_test = train_test_split(
+    # Convert date column
+    if "Date" in sales_data.columns:
 
-    X,
-    y,
-    test_size=0.2,
-    random_state=42
-)
-
-model = LinearRegression()
-
-model.fit(X_train, y_train)
-
-y_pred = model.predict(X_test)
-
-accuracy = round(
-    r2_score(y_test, y_pred),
-    2
-)
-
-# ----------------------------------------------------
-# PRODUCT SALES CHART
-# ----------------------------------------------------
-product_sales = sales_data.groupby(
-    'Product'
-)['Total_Sales'].sum()
-
-plt.figure(figsize=(8,5))
-
-product_sales.plot(kind='bar')
-
-plt.title("Product Sales")
-
-plt.xlabel("Product")
-
-plt.ylabel("Sales")
-
-plt.tight_layout()
-
-plt.savefig("static/chart.png")
-
-plt.close()
-
-# ----------------------------------------------------
-# MONTHLY SALES
-# ----------------------------------------------------
-sales_data['Month'] = sales_data[
-    'Date'
-].dt.month
-
-monthly_sales = sales_data.groupby(
-    'Month'
-)['Total_Sales'].sum()
-
-plt.figure(figsize=(8,5))
-
-plt.plot(
-    monthly_sales.index,
-    monthly_sales.values,
-    marker='o'
-)
-
-plt.title("Monthly Sales Trend")
-
-plt.xlabel("Month")
-
-plt.ylabel("Sales")
-
-plt.tight_layout()
-
-plt.savefig(
-    "static/monthly_chart.png"
-)
-
-plt.close()
-
-# ----------------------------------------------------
-# REGION SALES
-# ----------------------------------------------------
-region_sales = sales_data.groupby(
-    'Region'
-)['Total_Sales'].sum()
-
-plt.figure(figsize=(7,5))
-
-region_sales.plot(
-    kind='bar',
-    color='orange'
-)
-
-plt.title("Region-wise Sales")
-
-plt.xlabel("Region")
-
-plt.ylabel("Sales")
-
-plt.tight_layout()
-
-plt.savefig(
-    "static/region_chart.png"
-)
-
-plt.close()
-
-# ----------------------------------------------------
-# TOP PRODUCTS
-# ----------------------------------------------------
-top_products = sales_data.groupby(
-    'Product'
-)['Total_Sales'].sum().sort_values(
-    ascending=False
-).head(5)
-
-# ----------------------------------------------------
-# CHURN DATA
-# ----------------------------------------------------
-churn = customer_data[
-    'Churn'
-].value_counts()
-
-# ----------------------------------------------------
-# CHURN DONUT CHART
-# ----------------------------------------------------
-plt.figure(figsize=(5,5))
-
-plt.pie(
-
-    churn,
-
-    labels=churn.index,
-
-    autopct='%1.1f%%'
-)
-
-centre_circle = plt.Circle(
-
-    (0,0),
-
-    0.70,
-
-    fc='white'
-)
-
-fig = plt.gcf()
-
-fig.gca().add_artist(
-    centre_circle
-)
-
-plt.title(
-    "Customer Churn Analysis"
-)
-
-plt.tight_layout()
-
-plt.savefig(
-    "static/churn_chart.png"
-)
-
-plt.close()
-
-# ----------------------------------------------------
-# HOME
-# ----------------------------------------------------
-@app.route("/")
-
-def home():
-
-    return redirect("/dashboard")
-
-# ----------------------------------------------------
-# DASHBOARD
-# ----------------------------------------------------
-@app.route("/dashboard")
-
-def dashboard():
-
-    if 'user' not in session:
-
-        return render_template(
-            "dashboard.html"
+        sales_data["Date"] = pd.to_datetime(
+            sales_data["Date"]
         )
 
-    search = request.args.get("search")
+    return sales_data, customer_data
 
-    filtered_data = sales_data
 
-    if search:
+# =========================================
+# ACTIVITY LOG FUNCTION
+# =========================================
 
-        filtered_data = sales_data[
-            sales_data['Product'].str.contains(
+def add_log(username, activity):
+
+    timestamp = datetime.now().strftime(
+        "%d-%m-%Y %H:%M:%S"
+    )
+
+    conn = sqlite3.connect("users.db")
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO activity_logs(
+            username,
+            activity,
+            timestamp
+        )
+        VALUES (?, ?, ?)
+        """,
+        (
+            username,
+            activity,
+            timestamp
+        )
+    )
+
+    conn.commit()
+
+    conn.close()
+
+
+# =========================================
+# HOME PAGE
+# =========================================
+
+@app.route("/")
+def home():
+
+    return render_template(
+        "login.html"
+    )
+# =========================================
+# LOGIN
+# =========================================
+
+@app.route("/login", methods=["POST"])
+def login():
+
+    username = request.form["username"]
+
+    password = request.form["password"]
+
+    conn = sqlite3.connect(
+        "users.db"
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+
+        """
+        SELECT *
+        FROM users
+        WHERE username=?
+        """,
+
+        (username,)
+    )
+
+    user = cursor.fetchone()
+
+    conn.close()
+
+    if user:
+
+        stored_password = user[2]
+
+        if check_password_hash(
+            stored_password,
+            password
+        ):
+
+            session["user"] = user[1]
+
+            session["role"] = user[3]
+
+            add_log(
+                username,
+                "Logged In"
+            )
+
+            if user[3] == "admin":
+
+                return redirect(
+                    "/admin"
+                )
+
+            return redirect(
+                "/dashboard"
+            )
+
+    return """
+
+    <h2>Invalid Username or Password</h2>
+
+    <a href='/'>
+        Back to Login
+    </a>
+
+    """
+
+
+# =========================================
+# REGISTER
+# =========================================
+
+@app.route(
+    "/register",
+    methods=["GET", "POST"]
+)
+def register():
+
+    if request.method == "POST":
+
+        username = request.form[
+            "username"
+        ]
+
+        password = request.form[
+            "password"
+        ]
+
+        hashed_password = generate_password_hash(
+            password
+        )
+
+        conn = sqlite3.connect(
+            "users.db"
+        )
+
+        cursor = conn.cursor()
+
+        try:
+
+            cursor.execute(
+
+                """
+                INSERT INTO users(
+                    username,
+                    password,
+                    role
+                )
+
+                VALUES (?, ?, ?)
+                """,
+
+                (
+                    username,
+                    hashed_password,
+                    "user"
+                )
+            )
+
+            conn.commit()
+
+            add_log(
+                username,
+                "Registered"
+            )
+
+            conn.close()
+
+            return redirect("/")
+
+        except:
+
+            conn.close()
+
+            return """
+
+            <h2>
+            Username Already Exists
+            </h2>
+
+            <a href='/register'>
+            Try Again
+            </a>
+
+            """
+
+    return render_template(
+        "register.html"
+    )
+
+
+# =========================================
+# PROFILE
+# =========================================
+
+@app.route("/profile")
+def profile():
+
+    if "user" not in session:
+
+        return redirect("/")
+
+    return render_template(
+        "profile.html"
+    )
+
+
+# =========================================
+# CHANGE PASSWORD
+# =========================================
+
+@app.route(
+    "/change_password",
+    methods=["GET", "POST"]
+)
+def change_password():
+
+    if "user" not in session:
+
+        return redirect("/")
+
+    if request.method == "POST":
+
+        new_password = request.form[
+            "password"
+        ]
+
+        hashed_password = generate_password_hash(
+            new_password
+        )
+
+        conn = sqlite3.connect(
+            "users.db"
+        )
+
+        cursor = conn.cursor()
+
+        cursor.execute(
+
+            """
+            UPDATE users
+            SET password=?
+            WHERE username=?
+            """,
+
+            (
+                hashed_password,
+                session["user"]
+            )
+        )
+
+        conn.commit()
+
+        conn.close()
+
+        add_log(
+            session["user"],
+            "Changed Password"
+        )
+
+        return """
+
+        <h2>
+        Password Changed Successfully
+        </h2>
+
+        <a href='/profile'>
+        Back to Profile
+        </a>
+
+        """
+
+    return """
+
+    <h2>Change Password</h2>
+
+    <form method='POST'>
+
+        <input
+        type='password'
+        name='password'
+        placeholder='New Password'
+        required>
+
+        <br><br>
+
+        <button type='submit'>
+
+            Change Password
+
+        </button>
+
+    </form>
+
+    """
+
+
+# =========================================
+# LOGOUT
+# =========================================
+
+@app.route("/logout")
+def logout():
+
+    if "user" in session:
+
+        add_log(
+            session["user"],
+            "Logged Out"
+        )
+
+    session.clear()
+
+    return redirect("/")
+
+
+# =========================================
+# SESSION CHECK
+# =========================================
+
+def login_required():
+
+    if "user" not in session:
+
+        return False
+
+    return True
+# =========================================
+# UPLOAD DATASET
+# =========================================
+
+@app.route("/upload", methods=["GET", "POST"])
+def upload():
+
+    if "user" not in session:
+
+        return redirect("/")
+
+    if request.method == "POST":
+
+        sales_file = request.files["sales_file"]
+
+        customer_file = request.files["customer_file"]
+
+        os.makedirs(
+            "uploads",
+            exist_ok=True
+        )
+
+        sales_file.save(
+            "uploads/sales_data.csv"
+        )
+
+        customer_file.save(
+            "uploads/customer_data.csv"
+        )
+
+        generate_charts()
+
+        add_log(
+            session["user"],
+            "Uploaded Dataset"
+        )
+
+        return redirect(
+            "/dashboard"
+        )
+
+    return render_template(
+        "upload.html"
+    )
+
+# =========================================
+# CHECK DATASET
+# =========================================
+
+def dataset_exists():
+
+    sales_file = os.path.join(
+        "uploads",
+        "sales_data.csv"
+    )
+
+    customer_file = os.path.join(
+        "uploads",
+        "customer_data.csv"
+    )
+
+    return (
+
+        os.path.exists(
+            sales_file
+        )
+
+        and
+
+        os.path.exists(
+            customer_file
+        )
+
+    )
+
+
+# =========================================
+# DASHBOARD
+# =========================================
+@app.route("/dashboard")
+def dashboard():
+
+    if not login_required():
+        return redirect("/")
+
+    if not dataset_exists():
+        return redirect("/upload")
+
+    sales_data, customer_data = load_data()
+
+    if sales_data is None:
+        return redirect("/upload")
+
+    try:
+        generate_charts()
+    except Exception as e:
+        print("Chart Generation Error:", e)
+
+    # KPI
+
+    total_sales = 0
+
+    if "Total_Sales" in sales_data.columns:
+        total_sales = round(
+            sales_data["Total_Sales"].sum(),
+            2
+        )
+
+    total_customers = 0
+
+    if "Customer_ID" in sales_data.columns:
+        total_customers = sales_data[
+            "Customer_ID"
+        ].nunique()
+
+    top_product = "N/A"
+
+    if (
+        "Product" in sales_data.columns
+        and
+        "Total_Sales" in sales_data.columns
+    ):
+        top_product = sales_data.groupby(
+            "Product"
+        )["Total_Sales"].sum().idxmax()
+
+    # ML Accuracy
+
+    try:
+        model, accuracy = train_model()
+    except:
+        accuracy = 0
+
+    # Search Filter
+
+    search = request.args.get(
+        "search",
+        ""
+    )
+
+    region = request.args.get(
+        "region",
+        "All"
+    )
+
+    filtered_data = sales_data.copy()
+
+    if search and "Product" in filtered_data.columns:
+
+        filtered_data = filtered_data[
+            filtered_data["Product"]
+            .astype(str)
+            .str.contains(
                 search,
-                case=False
+                case=False,
+                na=False
             )
         ]
 
-    sales_table = filtered_data.head(20).to_html(
-        classes="table table-bordered",
+    if (
+        region != "All"
+        and
+        "Region" in filtered_data.columns
+    ):
+
+        filtered_data = filtered_data[
+            filtered_data["Region"] == region
+        ]
+
+    # Table
+
+    sales_table = filtered_data.head(
+        20
+    ).to_html(
+        classes=
+        "table table-bordered table-striped",
         index=False
     )
+
+    # Regions
+
+    regions = []
+
+    if "Region" in sales_data.columns:
+
+        regions = sorted(
+            sales_data["Region"]
+            .dropna()
+            .unique()
+        )
+
+    # Insights
+
+    insights = [
+
+        f"Highest sales product: {top_product}",
+
+        f"Total customers analyzed: {total_customers}",
+
+        f"Total sales generated: ₹{total_sales}",
+
+        f"Model Accuracy: {accuracy}%"
+
+    ]
+
+    # Activity Log
+
+    try:
+
+        add_log(
+            session["user"],
+            "Viewed Dashboard"
+        )
+
+    except:
+        pass
 
     return render_template(
 
@@ -326,274 +745,1383 @@ def dashboard():
 
         accuracy=accuracy,
 
+        sales_table=sales_table,
+
+        insights=insights,
+
+        regions=regions,
+
         chart="chart.png",
 
         monthly_chart="monthly_chart.png",
 
-        churn_chart="churn_chart.png",
-
         region_chart="region_chart.png",
 
-        top_products=top_products,
+        churn_chart="churn_chart.png"
+    )
+def generate_charts():
 
-        sales_table=sales_table
+    import os
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    sales_file = "uploads/sales_data.csv"
+
+    if not os.path.exists(sales_file):
+
+        print("sales_data.csv not found")
+
+        return
+
+    os.makedirs(
+        "static",
+        exist_ok=True
     )
 
-# ----------------------------------------------------
-# LOGIN
-# ----------------------------------------------------
-@app.route("/login", methods=["POST"])
+    sales_data = pd.read_csv(
+        sales_file
+    )
 
-def login():
+    print(
+        "CSV Columns:",
+        list(sales_data.columns)
+    )
 
-    username = request.form["username"]
+    # ==================================
+    # PRODUCT SALES CHART
+    # ==================================
 
-    password = request.form["password"]
+    try:
 
-    conn = sqlite3.connect("users.db")
+        if (
+            "Product" in sales_data.columns
+            and
+            "Total_Sales" in sales_data.columns
+        ):
+
+            plt.figure(figsize=(8,5))
+
+            product_sales = sales_data.groupby(
+                "Product"
+            )["Total_Sales"].sum()
+
+            product_sales.plot(
+                kind="bar"
+            )
+
+            plt.title(
+                "Product Sales Analysis"
+            )
+
+            plt.ylabel(
+                "Total Sales"
+            )
+
+            plt.tight_layout()
+
+            plt.savefig(
+                "static/chart.png"
+            )
+
+            plt.close()
+
+    except Exception as e:
+
+        print(
+            "Product Chart Error:",
+            e
+        )
+
+    # ==================================
+    # MONTHLY SALES TREND
+    # ==================================
+
+    try:
+
+        if (
+            "Date" in sales_data.columns
+            and
+            "Total_Sales" in sales_data.columns
+        ):
+
+            sales_data["Date"] = pd.to_datetime(
+                sales_data["Date"]
+            )
+
+            monthly_sales = sales_data.groupby(
+                sales_data["Date"].dt.month
+            )["Total_Sales"].sum()
+
+            plt.figure(figsize=(8,5))
+
+            monthly_sales.plot(
+                kind="line",
+                marker="o"
+            )
+
+            plt.title(
+                "Monthly Sales Trend"
+            )
+
+            plt.ylabel(
+                "Total Sales"
+            )
+
+            plt.tight_layout()
+
+            plt.savefig(
+                "static/monthly_chart.png"
+            )
+
+            plt.close()
+
+    except Exception as e:
+
+        print(
+            "Monthly Chart Error:",
+            e
+        )
+
+    # ==================================
+    # REGION SALES CHART
+    # ==================================
+
+    try:
+
+        if (
+            "Region" in sales_data.columns
+            and
+            "Total_Sales" in sales_data.columns
+        ):
+
+            plt.figure(figsize=(8,5))
+
+            region_sales = sales_data.groupby(
+                "Region"
+            )["Total_Sales"].sum()
+
+            region_sales.plot(
+                kind="bar"
+            )
+
+            plt.title(
+                "Region Wise Sales"
+            )
+
+            plt.ylabel(
+                "Total Sales"
+            )
+
+            plt.tight_layout()
+
+            plt.savefig(
+                "static/region_chart.png"
+            )
+
+            plt.close()
+
+    except Exception as e:
+
+        print(
+            "Region Chart Error:",
+            e
+        )
+
+# ==================================
+# CUSTOMER CHURN CHART
+# ==================================
+
+try:
+
+    customer_file = "uploads/customer_data.csv"
+
+    if os.path.exists(customer_file):
+
+        customer_data = pd.read_csv(
+            customer_file
+        )
+
+        print(
+            "Customer Columns:",
+            list(customer_data.columns)
+        )
+
+        if "Churn" in customer_data.columns:
+
+            plt.figure(figsize=(6,6))
+
+            churn_data = customer_data[
+                "Churn"
+            ].value_counts()
+
+            churn_data.plot(
+                kind="pie",
+                autopct="%1.1f%%"
+            )
+
+            plt.ylabel("")
+
+            plt.title(
+                "Customer Churn Analysis"
+            )
+
+            plt.tight_layout()
+
+            plt.savefig(
+                "static/churn_chart.png"
+            )
+
+            plt.close()
+
+            print(
+                "Churn Chart Generated"
+            )
+
+except Exception as e:
+
+    print(
+        "Churn Chart Error:",
+        e
+    )
+# =========================================
+# DATASET STATUS
+# =========================================
+
+@app.route("/dataset_status")
+def dataset_status():
+
+    if dataset_exists():
+
+        return """
+
+        <h2>
+        Dataset Uploaded
+        </h2>
+
+        """
+
+    return """
+
+    <h2>
+    Dataset Not Uploaded
+    </h2>
+
+    <a href='/upload'>
+    Upload Dataset
+    </a>
+
+    """
+# =========================================
+# TRAIN MACHINE LEARNING MODEL
+# =========================================
+
+def train_model():
+
+    sales_data, customer_data = load_data()
+
+    if sales_data is None:
+
+        return None, 0
+
+    required_columns = [
+
+        "Quantity",
+        "Price",
+        "Total_Sales"
+    ]
+
+    for col in required_columns:
+
+        if col not in sales_data.columns:
+
+            return None, 0
+
+    X = sales_data[
+        ["Quantity", "Price"]
+    ]
+
+    y = sales_data[
+        "Total_Sales"
+    ]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+
+        X,
+        y,
+
+        test_size=0.2,
+
+        random_state=42
+    )
+
+    model = RandomForestRegressor(
+
+        n_estimators=100,
+
+        random_state=42
+    )
+
+    model.fit(
+
+        X_train,
+
+        y_train
+    )
+
+    y_pred = model.predict(
+        X_test
+    )
+
+    accuracy = round(
+
+        r2_score(
+            y_test,
+            y_pred
+        ) * 100,
+
+        2
+    )
+
+    return model, accuracy
+
+
+# =========================================
+# PREDICTION MODULE
+# =========================================
+
+@app.route(
+    "/prediction",
+    methods=["GET", "POST"]
+)
+def prediction():
+
+    if not login_required():
+
+        return redirect("/")
+
+    if not dataset_exists():
+
+        return redirect(
+            "/upload"
+        )
+
+    prediction_result = None
+
+    accuracy = 0
+
+    model, accuracy = train_model()
+
+    if request.method == "POST":
+
+        quantity = int(
+
+            request.form[
+                "quantity"
+            ]
+        )
+
+        price = float(
+
+            request.form[
+                "price"
+            ]
+        )
+
+        prediction_result = round(
+
+            model.predict(
+
+                [[quantity, price]]
+
+            )[0],
+
+            2
+        )
+
+        add_log(
+
+            session["user"],
+
+            "Generated Prediction"
+        )
+
+    return render_template(
+
+        "prediction.html",
+
+        prediction=
+        prediction_result,
+
+        accuracy=
+        accuracy
+    )
+
+
+# =========================================
+# SALES FORECAST FUNCTION
+# =========================================
+
+def forecast_sales():
+
+    sales_data, customer_data = load_data()
+
+    if sales_data is None:
+
+        return 0
+
+    avg_sales = round(
+
+        sales_data[
+            "Total_Sales"
+        ].mean(),
+
+        2
+    )
+
+    return avg_sales
+
+
+# =========================================
+# MODEL INFORMATION
+# =========================================
+
+@app.route("/model_info")
+def model_info():
+
+    if not login_required():
+
+        return redirect("/")
+
+    model, accuracy = train_model()
+
+    return f"""
+
+    <h2>
+    Machine Learning Model
+    </h2>
+
+    <hr>
+
+    <h3>
+    Algorithm :
+    Random Forest Regressor
+    </h3>
+
+    <h3>
+    Accuracy :
+    {accuracy} %
+    </h3>
+
+    <h3>
+    Features :
+    Quantity, Price
+    </h3>
+
+    <h3>
+    Output :
+    Total Sales
+    </h3>
+
+    """
+
+
+# =========================================
+# SALES FORECAST PAGE
+# =========================================
+
+@app.route("/forecast")
+def forecast():
+
+    if not login_required():
+
+        return redirect("/")
+
+    future_sales = forecast_sales()
+
+    add_log(
+
+        session["user"],
+
+        "Viewed Forecast"
+    )
+
+    return f"""
+
+    <h2>
+    Sales Forecast
+    </h2>
+
+    <hr>
+
+    <h3>
+    Expected Average Sales :
+    ₹ {future_sales}
+    </h3>
+
+    """
+# =========================================
+# CUSTOMER SEGMENTATION
+# =========================================
+
+def generate_segmentation():
+
+    sales_data, customer_data = load_data()
+
+    if sales_data is None:
+
+        return None
+
+    required_columns = [
+
+        "Quantity",
+        "Total_Sales"
+
+    ]
+
+    for col in required_columns:
+
+        if col not in sales_data.columns:
+
+            return None
+
+    segment_data = sales_data[
+        [
+            "Quantity",
+            "Total_Sales"
+        ]
+    ]
+
+    kmeans = KMeans(
+
+        n_clusters=3,
+
+        random_state=42,
+
+        n_init=10
+    )
+
+    sales_data["Segment"] = kmeans.fit_predict(
+        segment_data
+    )
+
+    # =====================================
+    # SEGMENTATION CHART
+    # =====================================
+
+    plt.figure(figsize=(8,5))
+
+    plt.scatter(
+
+        sales_data["Quantity"],
+
+        sales_data["Total_Sales"],
+
+        c=sales_data["Segment"]
+
+    )
+
+    plt.xlabel(
+        "Quantity"
+    )
+
+    plt.ylabel(
+        "Total Sales"
+    )
+
+    plt.title(
+        "Customer Segmentation"
+    )
+
+    plt.tight_layout()
+
+    plt.savefig(
+        "static/segmentation_chart.png"
+    )
+
+    plt.close()
+
+    return sales_data
+
+
+# =========================================
+# SEGMENT ANALYTICS
+# =========================================
+
+def get_segment_summary():
+
+    sales_data = generate_segmentation()
+
+    if sales_data is None:
+
+        return {
+
+            "high": 0,
+
+            "medium": 0,
+
+            "low": 0
+        }
+
+    segment_counts = sales_data[
+        "Segment"
+    ].value_counts()
+
+    high = 0
+    medium = 0
+    low = 0
+
+    if len(segment_counts) >= 1:
+
+        high = segment_counts.iloc[0]
+
+    if len(segment_counts) >= 2:
+
+        medium = segment_counts.iloc[1]
+
+    if len(segment_counts) >= 3:
+
+        low = segment_counts.iloc[2]
+
+    return {
+
+        "high": high,
+
+        "medium": medium,
+
+        "low": low
+    }
+
+
+# =========================================
+# SEGMENTATION PAGE
+# =========================================
+
+@app.route("/segmentation")
+def segmentation():
+
+    if not login_required():
+
+        return redirect("/")
+
+    if not dataset_exists():
+
+        return redirect(
+            "/upload"
+        )
+
+    generate_segmentation()
+
+    summary = get_segment_summary()
+
+    add_log(
+
+        session["user"],
+
+        "Viewed Segmentation"
+    )
+
+    return render_template(
+
+        "segmentation.html",
+
+        high=summary["high"],
+
+        medium=summary["medium"],
+
+        low=summary["low"]
+    )
+
+
+# =========================================
+# SEGMENT DETAILS
+# =========================================
+
+@app.route("/segment_details")
+def segment_details():
+
+    if not login_required():
+
+        return redirect("/")
+
+    sales_data = generate_segmentation()
+
+    if sales_data is None:
+
+        return redirect(
+            "/upload"
+        )
+
+    table = sales_data.head(
+        50
+    ).to_html(
+
+        classes=
+        "table table-bordered",
+
+        index=False
+    )
+
+    return f"""
+
+    <html>
+
+    <head>
+
+    <title>
+
+    Segment Details
+
+    </title>
+
+    </head>
+
+    <body>
+
+    <h2>
+
+    Customer Segmentation Data
+
+    </h2>
+
+    {table}
+
+    </body>
+
+    </html>
+
+    """
+
+
+# =========================================
+# CUSTOMER RETENTION INSIGHTS
+# =========================================
+
+@app.route("/retention")
+def retention():
+
+    if not login_required():
+
+        return redirect("/")
+
+    return """
+
+    <h2>
+
+    Customer Retention Suggestions
+
+    </h2>
+
+    <hr>
+
+    <ul>
+
+        <li>
+        Offer discounts to
+        low-value customers.
+        </li>
+
+        <li>
+        Reward high-value
+        customers with loyalty
+        programs.
+        </li>
+
+        <li>
+        Provide personalized
+        marketing campaigns.
+        </li>
+
+        <li>
+        Improve customer support
+        engagement.
+        </li>
+
+    </ul>
+
+    """
+# =========================================
+# ADMIN PANEL
+# =========================================
+
+@app.route("/admin")
+def admin():
+
+    if session.get("role") != "admin":
+
+        return "Access Denied"
+
+    conn = sqlite3.connect(
+        "users.db"
+    )
 
     cursor = conn.cursor()
 
-    cursor.execute(
+    # SEARCH
 
-        "SELECT * FROM users WHERE username=? AND password=?",
-
-        (username, password)
+    search = request.args.get(
+        "search",
+        ""
     )
 
-    user = cursor.fetchone()
+    if search:
+
+        cursor.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE username LIKE ?
+            """,
+            (
+                "%" + search + "%",
+            )
+        )
+
+    else:
+
+        cursor.execute(
+            "SELECT * FROM users"
+        )
+
+    users = cursor.fetchall()
+
+    cursor.execute(
+        """
+        SELECT *
+        FROM activity_logs
+        ORDER BY id DESC
+        LIMIT 20
+        """
+    )
+
+    logs = cursor.fetchall()
 
     conn.close()
 
-    if user:
+    return render_template(
+        "admin.html",
+        users=users,
+        logs=logs
+    )
+# =========================================
+# ADD USER
+# =========================================
 
-        session['user'] = user[1]
+@app.route("/add_user", methods=["GET", "POST"])
+def add_user():
 
-        session['role'] = user[3]
+    if session.get("role") != "admin":
 
-        return redirect("/dashboard")
-
-    return redirect("/dashboard")
-
-# ----------------------------------------------------
-# REGISTER
-# ----------------------------------------------------
-@app.route("/register", methods=["GET", "POST"])
-
-def register():
+        return "Access Denied"
 
     if request.method == "POST":
 
         username = request.form["username"]
-
         password = request.form["password"]
+        role = request.form["role"]
+
+        hashed_password = generate_password_hash(
+            password
+        )
 
         conn = sqlite3.connect("users.db")
 
         cursor = conn.cursor()
 
         cursor.execute(
+            """
+            INSERT INTO users(
+                username,
+                password,
+                role
+            )
+            VALUES (?, ?, ?)
+            """,
+            (
+                username,
+                hashed_password,
+                role
+            )
+        )
 
-            "INSERT INTO users(username, password, role) VALUES(?, ?, ?)",
+        conn.commit()
+        conn.close()
 
-            (username, password, "user")
+        return redirect("/admin")
+
+    return render_template(
+        "add_user.html"
+    )
+
+# =========================================
+# EDIT USER
+# =========================================
+
+@app.route(
+    "/edit_user/<int:user_id>",
+    methods=["GET", "POST"]
+)
+def edit_user(user_id):
+
+    if session.get("role") != "admin":
+
+        return "Access Denied"
+
+    conn = sqlite3.connect(
+        "users.db"
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT *
+        FROM users
+        WHERE id=?
+        """,
+        (user_id,)
+    )
+
+    user = cursor.fetchone()
+
+    if user and user[1] == "admin":
+
+        conn.close()
+
+        return "Admin account cannot be edited."
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+
+        role = request.form["role"]
+
+        cursor.execute(
+            """
+            UPDATE users
+            SET username=?,
+                role=?
+            WHERE id=?
+            """,
+            (
+                username,
+                role,
+                user_id
+            )
         )
 
         conn.commit()
 
         conn.close()
 
-        return redirect("/dashboard")
+        return redirect("/admin")
+
+    conn.close()
 
     return render_template(
-        "register.html"
+        "edit_user.html",
+        user=user
     )
+# =========================================
+# DELETE USER
+# =========================================
 
-# ----------------------------------------------------
-# PROFILE
-# ----------------------------------------------------
-@app.route("/profile")
+@app.route(
+    "/delete_user/<int:user_id>"
+)
+def delete_user(user_id):
 
-def profile():
-
-    if 'user' not in session:
-
-        return redirect("/dashboard")
-
-    return render_template(
-        "profile.html"
-    )
-
-# ----------------------------------------------------
-# PREDICTION
-# ----------------------------------------------------
-@app.route("/prediction", methods=["GET", "POST"])
-
-def prediction():
-
-    if 'user' not in session:
-
-        return redirect("/dashboard")
-
-    prediction = None
-
-    if request.method == "POST":
-
-        quantity = int(
-            request.form["quantity"]
-        )
-
-        price = int(
-            request.form["price"]
-        )
-
-        prediction = model.predict(
-            [[quantity, price]]
-        )[0]
-
-    plt.figure(figsize=(6,4))
-
-    plt.scatter(y_test, y_pred)
-
-    plt.xlabel("Actual")
-
-    plt.ylabel("Predicted")
-
-    plt.title("Sales Prediction")
-
-    plt.tight_layout()
-
-    plt.savefig(
-        "static/prediction_chart.png"
-    )
-
-    plt.close()
-
-    return render_template(
-
-        "prediction.html",
-
-        prediction=prediction,
-
-        prediction_chart="prediction_chart.png"
-    )
-
-# ----------------------------------------------------
-# ADMIN
-# ----------------------------------------------------
-@app.route("/admin")
-
-def admin():
-
-    if 'user' not in session:
-
-        return redirect("/dashboard")
-
-    if session.get('role') != 'admin':
+    if session.get("role") != "admin":
 
         return "Access Denied"
 
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(
+        "users.db"
+    )
 
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM users")
+    cursor.execute(
+        """
+        SELECT username
+        FROM users
+        WHERE id=?
+        """,
+        (user_id,)
+    )
 
-    users = cursor.fetchall()
+    user = cursor.fetchone()
+
+    if user and user[0] == "admin":
+
+        conn.close()
+
+        return "Admin account cannot be deleted."
+
+    cursor.execute(
+        """
+        DELETE FROM users
+        WHERE id=?
+        """,
+        (user_id,)
+    )
+
+    conn.commit()
+
+    conn.close()
+
+    return redirect("/admin")
+
+# =========================================
+# ACTIVITY LOGS
+# =========================================
+
+@app.route("/activity_logs")
+def activity_logs():
+
+    if session.get("role") != "admin":
+
+        return "Access Denied"
+
+    conn = sqlite3.connect(
+        "users.db"
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+
+        """
+        SELECT *
+        FROM activity_logs
+        ORDER BY id DESC
+        """
+    )
+
+    logs = cursor.fetchall()
 
     conn.close()
 
     return render_template(
 
-        "admin.html",
+        "activity_logs.html",
 
-        users=users
+        logs=logs
     )
 
-# ----------------------------------------------------
-# UPLOAD
-# ----------------------------------------------------
-@app.route("/upload", methods=["POST"])
 
-def upload():
+# =========================================
+# SYSTEM STATISTICS
+# =========================================
 
-    if 'file' not in request.files:
+@app.route("/system_stats")
+def system_stats():
 
-        return redirect("/dashboard")
+    if session.get("role") != "admin":
 
-    file = request.files['file']
+        return "Access Denied"
 
-    if file.filename == '':
+    conn = sqlite3.connect(
+        "users.db"
+    )
 
-        return redirect("/dashboard")
+    cursor = conn.cursor()
 
-    file.save(file.filename)
+    cursor.execute(
+        "SELECT COUNT(*) FROM users"
+    )
 
-    return redirect("/dashboard")
+    total_users = cursor.fetchone()[0]
 
-# ----------------------------------------------------
-# DOWNLOAD CSV
-# ----------------------------------------------------
-@app.route("/download")
+    cursor.execute(
+        "SELECT COUNT(*) FROM activity_logs"
+    )
 
-def download():
+    total_logs = cursor.fetchone()[0]
 
-    return sales_data.to_csv(index=False)
+    conn.close()
 
-# ----------------------------------------------------
-# PDF REPORT
-# ----------------------------------------------------
-@app.route("/pdf")
+    return f"""
 
-def pdf():
+    <h2>
 
-    pdf_path = "sales_report.pdf"
+    System Statistics
+
+    </h2>
+
+    <hr>
+
+    <h3>
+
+    Total Users :
+    {total_users}
+
+    </h3>
+
+    <h3>
+
+    Total Activities :
+    {total_logs}
+
+    </h3>
+
+    """
+# =========================================
+# PDF REPORT GENERATION
+# =========================================
+
+@app.route("/report")
+def report():
+
+    if not login_required():
+
+        return redirect("/")
+
+    sales_data, customer_data = load_data()
+
+    if sales_data is None:
+
+        return redirect("/upload")
+
+    pdf_path = "static/report.pdf"
+
+    total_sales = round(
+        sales_data["Total_Sales"].sum(),
+        2
+    )
+
+    total_customers = sales_data[
+        "Customer_ID"
+    ].nunique()
+
+    top_product = sales_data.groupby(
+        "Product"
+    )["Total_Sales"].sum().idxmax()
 
     c = canvas.Canvas(pdf_path)
+    c.setFont(
+        "Helvetica-Bold",
+        16
+    )
 
     c.drawString(
-        100,
+        150,
         800,
-        "Customer Sales Analysis Report"
+        "Customer Sales Report"
+    )
+
+    c.setFont(
+        "Helvetica",
+        12
     )
 
     c.drawString(
-        100,
-        760,
-        f"Total Sales: {total_sales}"
+        50,
+        750,
+        f"Total Sales : ₹ {total_sales}"
     )
 
     c.drawString(
-        100,
-        740,
-        f"Total Customers: {total_customers}"
+        50,
+        720,
+        f"Total Customers : {total_customers}"
+    )
+
+    c.drawString(
+        50,
+        690,
+        f"Top Product : {top_product}"
+    )
+
+    c.drawString(
+        50,
+        660,
+        f"Generated By : {session['user']}"
     )
 
     c.save()
 
-    return redirect("/dashboard")
+    add_log(
+        session["user"],
+        "Generated PDF Report"
+    )
 
-# ----------------------------------------------------
-# LOGOUT
-# ----------------------------------------------------
-@app.route("/logout")
+    return send_file(
+        pdf_path,
+        as_attachment=True
+    )
 
-def logout():
 
-    session.clear()
+# =========================================
+# EXPORT EXCEL REPORT
+# =========================================
 
-    return redirect("/dashboard")
+@app.route("/export_excel")
+def export_excel():
 
-# ----------------------------------------------------
-# RUN APP
-# ----------------------------------------------------
+    if not login_required():
+
+        return redirect("/")
+
+    sales_data, customer_data = load_data()
+
+    if sales_data is None:
+
+        return redirect("/upload")
+
+    excel_path = "static/sales_report.xlsx"
+
+    sales_data.to_excel(
+
+        excel_path,
+
+        index=False
+    )
+
+    add_log(
+
+        session["user"],
+
+        "Exported Excel Report"
+    )
+
+    return send_file(
+
+        excel_path,
+
+        as_attachment=True
+    )
+
+
+# =========================================
+# BUSINESS INSIGHTS
+# =========================================
+
+@app.route("/insights")
+def insights():
+
+    if not login_required():
+
+        return redirect("/")
+
+    insights_data = generate_insights()
+
+    html = """
+
+    <h2>
+
+    AI Business Insights
+
+    </h2>
+
+    <hr>
+
+    """
+
+    for item in insights_data:
+
+        html += f"<h4>{item}</h4>"
+
+    return html
+
+
+# =========================================
+# ABOUT PROJECT
+# =========================================
+
+@app.route("/about")
+def about():
+
+    return """
+
+    <h2>
+
+    Customer Sales and Churn Analysis System
+
+    </h2>
+
+    <hr>
+
+    <h3>
+
+    MCA Final Year Major Project
+
+    </h3>
+
+    <h4>
+
+    Technologies:
+
+    Python, Flask, SQLite,
+    Machine Learning,
+    Pandas, Matplotlib,
+    Scikit-Learn
+
+    </h4>
+
+    """
+
+
+# =========================================
+# ERROR HANDLER
+# =========================================
+
+@app.errorhandler(404)
+def not_found(error):
+
+    return """
+
+    <h2>
+
+    Page Not Found
+
+    </h2>
+
+    <a href='/dashboard'>
+
+    Dashboard
+
+    </a>
+
+    """, 404
+
+
+# =========================================
+# ERROR HANDLER 500
+# =========================================
+
+@app.errorhandler(500)
+def internal_error(error):
+
+    return """
+    <h2>
+
+      Internal Server Error
+
+     </h2>
+
+
+    Please check uploaded dataset
+    and application logs.
+
+    """, 500
+# =========================================
+# RUN APPLICATION
+# =========================================
+
 if __name__ == "__main__":
+
+    port = int(
+        os.environ.get(
+            "PORT",
+            5000
+        )
+    )
 
     app.run(
 
         host="0.0.0.0",
 
-        port=5000,
+        port=port,
 
-        debug=False
-    )
+        debug=True
+)

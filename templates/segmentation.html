@@ -1,0 +1,499 @@
+<!-- =========================================
+FILE: templates/segmentation.html
+========================================= -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Customer Segmentation
+    </title>
+
+    <!-- Bootstrap -->
+    <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="d-flex">
+
+    <!-- =====================================
+    SIDEBAR
+    ====================================== -->
+
+    <div class="sidebar">
+
+        <h2 class="logo">
+
+            Sales Dashboard
+
+        </h2>
+
+        <a href="/dashboard">
+
+            📊 Dashboard
+
+        </a>
+
+        <a href="/prediction">
+
+            🤖 Prediction
+
+        </a>
+
+        <a href="/segmentation">
+
+            👥 Segmentation
+
+        </a>
+
+        <a href="/upload">
+
+            📂 Upload Dataset
+
+        </a>
+
+        <a href="/profile">
+
+            👤 Profile
+
+        </a>
+
+        <a href="/logout">
+
+            🚪 Logout
+
+        </a>
+
+    </div>
+
+    <!-- =====================================
+    MAIN CONTENT
+    ====================================== -->
+
+    <div class="main-content">
+
+        <!-- HEADER -->
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>
+
+                    Customer Segmentation
+
+                </h1>
+
+                <h5>
+
+                    Machine Learning Based
+                    Customer Analysis
+
+                </h5>
+
+            </div>
+
+        </div>
+
+        <!-- =====================================
+        SEGMENT KPI CARDS
+        ====================================== -->
+
+        <div class="row mt-4">
+
+            <div class="col-md-4">
+
+                <div class="card bg-success text-white">
+
+                    <div class="card-body text-center">
+
+                        <h4>
+
+                            High Value Customers
+
+                        </h4>
+
+                        <h1>
+
+                            {{ high }}
+
+                        </h1>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <div class="card bg-warning">
+
+                    <div class="card-body text-center">
+
+                        <h4>
+
+                            Medium Value Customers
+
+                        </h4>
+
+                        <h1>
+
+                            {{ medium }}
+
+                        </h1>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <div class="card bg-danger text-white">
+
+                    <div class="card-body text-center">
+
+                        <h4>
+
+                            Low Value Customers
+
+                        </h4>
+
+                        <h1>
+
+                            {{ low }}
+
+                        </h1>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- =====================================
+        SEGMENTATION CHART
+        ====================================== -->
+
+        <div class="card mt-4">
+
+            <div class="card-body">
+
+                <h3 class="text-dark">
+
+                    Customer Segmentation Chart
+
+                </h3>
+
+                <hr>
+
+                <img
+                src="{{ url_for('static',
+                filename='segmentation_chart.png') }}"
+                class="img-fluid">
+
+            </div>
+
+        </div>
+
+        <!-- =====================================
+        CUSTOMER GROUPS
+        ====================================== -->
+
+        <div class="card mt-4">
+
+            <div class="card-body">
+
+                <h3 class="text-dark">
+
+                    Customer Groups
+
+                </h3>
+
+                <table
+                class="table table-bordered mt-3">
+
+                    <tr>
+
+                        <th>
+
+                            Segment
+
+                        </th>
+
+                        <th>
+
+                            Description
+
+                        </th>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>
+
+                            High Value
+
+                        </td>
+
+                        <td>
+
+                            Customers with
+                            maximum sales and
+                            purchasing activity.
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>
+
+                            Medium Value
+
+                        </td>
+
+                        <td>
+
+                            Customers with
+                            moderate buying
+                            patterns.
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>
+
+                            Low Value
+
+                        </td>
+
+                        <td>
+
+                            Customers with
+                            low purchasing
+                            activity and
+                            churn probability.
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+        </div>
+
+        <!-- =====================================
+        RETENTION STRATEGIES
+        ====================================== -->
+
+        <div class="card mt-4">
+
+            <div class="card-body">
+
+                <h3 class="text-dark">
+
+                    Customer Retention Strategies
+
+                </h3>
+
+                <ul class="text-dark">
+
+                    <li>
+
+                        Offer discounts to
+                        low-value customers.
+
+                    </li>
+
+                    <li>
+
+                        Launch loyalty
+                        reward programs.
+
+                    </li>
+
+                    <li>
+
+                        Personalized marketing
+                        campaigns.
+
+                    </li>
+
+                    <li>
+
+                        Improve customer
+                        engagement.
+
+                    </li>
+
+                    <li>
+
+                        Provide premium support
+                        for high-value customers.
+
+                    </li>
+
+                </ul>
+
+            </div>
+
+        </div>
+
+        <!-- =====================================
+        MACHINE LEARNING DETAILS
+        ====================================== -->
+
+        <div class="card mt-4">
+
+            <div class="card-body">
+
+                <h3 class="text-dark">
+
+                    Machine Learning Information
+
+                </h3>
+
+                <table
+                class="table table-bordered mt-3">
+
+                    <tr>
+
+                        <th>
+
+                            Algorithm
+
+                        </th>
+
+                        <td>
+
+                            KMeans Clustering
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+
+                            Number of Clusters
+
+                        </th>
+
+                        <td>
+
+                            3
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+
+                            Input Features
+
+                        </th>
+
+                        <td>
+
+                            Quantity,
+                            Total Sales
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+
+                            Output
+
+                        </th>
+
+                        <td>
+
+                            Customer Segments
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+        </div>
+
+        <!-- =====================================
+        ACTION BUTTONS
+        ====================================== -->
+
+        <div class="mt-4">
+
+            <a
+            href="/segment_details"
+            class="btn btn-primary">
+
+                View Segment Details
+
+            </a>
+
+            <a
+            href="/retention"
+            class="btn btn-success">
+
+                Retention Suggestions
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =====================================
+FOOTER
+===================================== -->
+
+<footer>
+
+    MCA Final Year Major Project |
+    Customer Sales and Churn Analysis System |
+    Developed by Pranali Babar
+
+</footer>
+
+</body>
+
+</html>

@@ -1,45 +1,48 @@
+/* =========================================
+GLOBAL
+========================================= */
+
 body {
 
     margin: 0;
 
     padding: 0;
 
-    background-color: #0f1117;
-
-    color: white;
-
     font-family: Arial, sans-serif;
+
+    background: #f4f6f9;
 }
 
-/* SIDEBAR */
+/* =========================================
+SIDEBAR
+========================================= */
+
 .sidebar {
 
     width: 250px;
 
-    height: 100vh;
+    min-height: 100vh;
 
-    background-color: #161b22;
+    background: #1f2937;
 
-    padding: 20px;
+    padding-top: 20px;
 
     position: fixed;
 
-    overflow-y: auto;
+    left: 0;
+
+    top: 0;
 }
 
-/* LOGO */
-.logo {
+.sidebar .logo {
 
     color: white;
 
-    margin-bottom: 40px;
-
     text-align: center;
 
-    font-weight: bold;
+    margin-bottom: 30px;
 }
 
-/* SIDEBAR LINKS */
 .sidebar a {
 
     display: block;
@@ -48,181 +51,182 @@ body {
 
     text-decoration: none;
 
-    margin-bottom: 20px;
-
-    font-size: 18px;
+    padding: 15px 20px;
 
     transition: 0.3s;
 }
 
 .sidebar a:hover {
 
-    color: #0d6efd;
-
-    transform: translateX(5px);
+    background: #374151;
 }
 
-/* MAIN CONTENT */
+/* =========================================
+MAIN CONTENT
+========================================= */
+
 .main-content {
 
     margin-left: 260px;
 
-    padding: 30px;
+    padding: 20px;
 }
 
-/* TITLE */
-.main-title {
+.dashboard-header {
 
-    text-align: center;
+    background: white;
 
-    margin-top: 40px;
-
-    margin-bottom: 50px;
-
-    font-size: 55px;
-
-    font-weight: bold;
-}
-
-/* LOGIN BOX */
-.login-box {
-
-    width: 450px;
-
-    margin: auto;
-
-    background-color: #1c1f26;
-
-    padding: 40px;
-
-    border-radius: 20px;
-
-    box-shadow: 0px 0px 20px rgba(0,0,0,0.5);
-}
-
-/* FORM */
-.form-control {
-
-    margin-top: 15px;
-
-    height: 50px;
+    padding: 20px;
 
     border-radius: 10px;
+
+    box-shadow: 0px 2px 8px rgba(
+        0,
+        0,
+        0,
+        0.1
+    );
 }
 
-/* BUTTON */
-.btn-login {
+/* =========================================
+CARDS
+========================================= */
 
-    width: 100%;
+.dashboard-card {
+
+    border: none;
+
+    border-radius: 10px;
 
     margin-top: 20px;
 
-    height: 50px;
-
-    font-size: 18px;
-
-    border-radius: 10px;
+    box-shadow: 0px 2px 8px rgba(
+        0,
+        0,
+        0,
+        0.15
+    );
 }
 
-/* HEADER */
-.dashboard-header {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: center;
-}
-
-/* KPI CARDS */
-.dashboard-card {
-
-    border-radius: 20px;
-
-    transition: 0.3s;
-
-    border: none;
-}
-
-.dashboard-card:hover {
-
-    transform: scale(1.03);
-}
-
-/* CARD */
 .card {
 
-    border-radius: 20px;
+    border-radius: 10px;
 
-    border: none;
-
-    box-shadow: 0px 0px 15px rgba(0,0,0,0.2);
+    box-shadow: 0px 2px 8px rgba(
+        0,
+        0,
+        0,
+        0.1
+    );
 }
 
-/* CHART CARD */
-.chart-card {
+/* =========================================
+TABLES
+========================================= */
 
-    border-radius: 20px;
+.table {
+
+    margin-top: 15px;
 }
 
-/* IMAGE */
+.table th {
+
+    background: #343a40;
+
+    color: white;
+}
+
+/* =========================================
+IMAGES / CHARTS
+========================================= */
+
 img {
 
-    width: 100%;
+    max-width: 100%;
 
     border-radius: 10px;
 }
 
-/* TABLE */
-table {
+/* =========================================
+BUTTONS
+========================================= */
 
-    width: 100% !important;
+.btn {
+
+    margin-right: 5px;
+
+    margin-top: 5px;
 }
 
-/* FOOTER */
-footer {
+/* =========================================
+FOOTER
+========================================= */
 
-    margin-top: 50px;
+footer {
 
     text-align: center;
 
-    color: gray;
+    padding: 20px;
+
+    margin-top: 30px;
+
+    background: white;
+
+    border-top: 1px solid #ddd;
 }
 
-/* LIGHT MODE */
-.light-mode {
+/* =========================================
+LOGIN & REGISTER CARDS
+========================================= */
 
-    background-color: white;
+.login-card,
+.register-card {
 
-    color: black;
+    background: rgba(
+        255,
+        255,
+        255,
+        0.95
+    );
+
+    border-radius: 15px;
+
+    padding: 30px;
+
+    box-shadow: 0px 0px 20px rgba(
+        0,
+        0,
+        0,
+        0.3
+    );
 }
 
-/* RESPONSIVE */
+/* =========================================
+PROFILE PAGE
+========================================= */
+
+.profile-card {
+
+    text-align: center;
+}
+
+/* =========================================
+RESPONSIVE
+========================================= */
+
 @media screen and (max-width: 768px) {
 
     .sidebar {
 
         width: 100%;
 
-        height: auto;
-
         position: relative;
+
+        min-height: auto;
     }
 
     .main-content {
 
         margin-left: 0;
-    }
-
-    .login-box {
-
-        width: 100%;
-    }
-
-    .dashboard-header {
-
-        flex-direction: column;
-
-        align-items: flex-start;
     }
 }

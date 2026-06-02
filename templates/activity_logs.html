@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Activity Logs
+    </title>
+
+    <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet">
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="container mt-5">
+
+    <div class="card shadow">
+
+        <div class="card-body">
+
+            <h1 class="text-center">
+
+                Activity Logs
+
+            </h1>
+
+            <hr>
+
+            <div class="text-center">
+
+                <a href="/admin"
+                   class="btn btn-primary">
+
+                    Admin Panel
+
+                </a>
+
+                <a href="/dashboard"
+                   class="btn btn-success">
+
+                    Dashboard
+
+                </a>
+
+                <a href="/logout"
+                   class="btn btn-danger">
+
+                    Logout
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- LOG TABLE -->
+
+    <div class="card mt-4 shadow">
+
+        <div class="card-body">
+
+            <h3>
+
+                System Activity History
+
+            </h3>
+
+            <table
+            class="table table-bordered table-striped">
+
+                <thead class="table-dark">
+
+                    <tr>
+
+                       <th>ID</th>
+                       <th>Username</th>
+                       <th>Activity</th>
+                       <th>Date & Time</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for log in logs %}
+
+                    <tr>
+
+                        <td>
+
+                            {{ log[0] }}
+
+                        </td>
+
+                        <td>
+
+                            {{ log[1] }}
+
+                        </td>
+
+                        <td>
+
+                            {{ log[2] }}
+
+                        </td>
+                        <td>
+
+                            {{ log[3] }}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <!-- ACTIVITY GUIDE -->
+
+    <div class="card mt-4 shadow">
+
+        <div class="card-body">
+
+            <h3>
+
+                Activity Types
+
+            </h3>
+
+            <ul>
+
+                <li>
+
+                    Logged In
+
+                </li>
+
+                <li>
+
+                    Logged Out
+
+                </li>
+
+                <li>
+
+                    Uploaded Dataset
+
+                </li>
+
+                <li>
+
+                    Generated Prediction
+
+                </li>
+
+                <li>
+
+                    Viewed Dashboard
+
+                </li>
+
+                <li>
+
+                    Viewed Segmentation
+
+                </li>
+
+                <li>
+
+                    Generated PDF Report
+
+                </li>
+
+                <li>
+
+                    Exported Excel Report
+
+                </li>
+
+                <li>
+
+                    Added User
+
+                </li>
+
+                <li>
+
+                    Edited User
+
+                </li>
+
+                <li>
+
+                    Deleted User
+
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</div>
+
+<footer class="text-center mt-4 mb-3">
+
+    <hr>
+
+    Customer Sales & Churn Analysis System
+
+    <br>
+
+    MCA Final Year Major Project
+
+    <br>
+
+    Developed By: Pranali Babar
+
+</footer>
+
+</body>
+
+</html>

@@ -1,9 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-    <title>Profile</title>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        User Profile
+    </title>
 
     <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
@@ -16,141 +23,182 @@
 
 <body>
 
-<div class="d-flex">
+<div class="container mt-5">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
+    <div class="card shadow">
 
-        <h2 class="logo">
+        <div class="card-body text-center">
 
-            Sales Dashboard
+            <h1>
 
-        </h2>
+                User Profile
 
-        <a href="/dashboard">
+            </h1>
 
-            Dashboard
+            <hr>
 
-        </a>
+            <img
+            src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+            width="120">
 
-        <a href="/profile">
+            <br><br>
 
-            Profile
+            <h3>
 
-        </a>
+                {{ session['user'] }}
 
-        <a href="/prediction">
+            </h3>
 
-            Prediction
+            <h5>
 
-        </a>
+                Role :
+                {{ session['role'] }}
 
-        <a href="/admin">
+            </h5>
 
-            Admin
-
-        </a>
-
-        <a href="/logout">
-
-            Logout
-
-        </a>
+        </div>
 
     </div>
 
-    <!-- MAIN CONTENT -->
-    <div class="main-content">
+    <!-- ACTIONS -->
 
-        <div class="dashboard-header">
+    <div class="card mt-4 shadow">
 
-            <div>
+        <div class="card-body">
 
-                <h1>
+            <h3>
 
-                    User Profile
+                Profile Actions
 
-                </h1>
+            </h3>
 
-                <h5>
+            <hr>
 
-                    Welcome {{ session['user'] }}
+            <a href="/dashboard"
+               class="btn btn-primary">
 
-                </h5>
+                Dashboard
 
-            </div>
+            </a>
 
-        </div>
+            <a href="/change_password"
+               class="btn btn-warning">
 
-        <!-- PROFILE CARD -->
-        <div class="card mt-4 p-4">
+                Change Password
 
-            <div class="card-body">
+            </a>
 
-                <h3 class="text-dark">
+            <a href="/prediction"
+               class="btn btn-success">
 
-                    Username:
-                    {{ session['user'] }}
+                Sales Prediction
 
-                </h3>
+            </a>
 
-                <h4 class="text-dark mt-4">
+            <a href="/segmentation"
+               class="btn btn-info">
 
-                    Role:
-                    {{ session['role'] }}
+                Segmentation
 
-                </h4>
+            </a>
 
-                <h4 class="text-dark mt-4">
+            <a href="/logout"
+               class="btn btn-danger">
 
-                    System Access:
-                    Active
+                Logout
 
-                </h4>
-
-                <h4 class="text-dark mt-4">
-
-                    Project:
-                    Customer Sales Analysis System
-
-                </h4>
-
-            </div>
+            </a>
 
         </div>
 
-        <!-- USER ACTIVITY -->
-        <div class="card mt-4">
+    </div>
 
-            <div class="card-body">
+    <!-- PROJECT INFO -->
 
-                <h4 class="text-dark">
+    <div class="card mt-4 shadow">
 
-                    Recent Activity
+        <div class="card-body">
 
-                </h4>
+            <h3>
 
-                <ul class="text-dark">
+                Project Information
 
-                    <li>
-                        Logged into dashboard
-                    </li>
+            </h3>
 
-                    <li>
-                        Viewed prediction report
-                    </li>
+            <hr>
 
-                    <li>
-                        Accessed analytics dashboard
-                    </li>
+            <table class="table table-bordered">
 
-                    <li>
-                        Generated business report
-                    </li>
+                <tr>
 
-                </ul>
+                    <th>
 
-            </div>
+                        Project Title
+
+                    </th>
+
+                    <td>
+
+                        Customer Sales and Churn
+                        Analysis System Using
+                        Machine Learning
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <th>
+
+                        Technology
+
+                    </th>
+
+                    <td>
+
+                        Python, Flask,
+                        SQLite,
+                        Machine Learning
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <th>
+
+                        ML Algorithms
+
+                    </th>
+
+                    <td>
+
+                        Random Forest,
+                        KMeans Clustering
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <th>
+
+                        Developed By
+
+                    </th>
+
+                    <td>
+
+                        Pranali Babar
+
+                    </td>
+
+                </tr>
+
+            </table>
 
         </div>
 
@@ -158,10 +206,16 @@
 
 </div>
 
-<footer>
+<footer class="text-center mt-4 mb-3">
 
-    MCA Final Year Major Project |
-    Developed by Pranali Babar
+    <hr>
+
+    MCA Final Year Project
+
+    <br>
+
+    Customer Sales &
+    Churn Analysis System
 
 </footer>
 

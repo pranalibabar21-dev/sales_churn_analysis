@@ -1,160 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
     <title>Admin Dashboard</title>
 
-    <!-- Bootstrap -->
     <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet">
 
-    <!-- CSS -->
     <link rel="stylesheet"
     href="{{ url_for('static', filename='style.css') }}">
 
 </head>
 
 <body>
+<h2>
+Welcome Admin :
+{{ session['user'] }}
+</h2>
+<div class="container-fluid mt-4">
 
-<div class="d-flex">
+    <div class="card shadow">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
+        <div class="card-body">
 
-        <h2 class="logo">
+            <h1 class="text-center">
 
-            Sales Dashboard
+                Admin Dashboard
 
-        </h2>
+            </h1>
 
-        <a href="/dashboard">
+            <hr>
 
-            Dashboard
+            <div class="text-center">
 
-        </a>
+                <a href="/dashboard"
+                   class="btn btn-primary">
 
-        <a href="/profile">
+                    Dashboard
 
-            Profile
+                </a>
 
-        </a>
+                <a href="/add_user"
+                   class="btn btn-success">
 
-        <a href="/prediction">
+                    Add User
 
-            Prediction
+                </a>
 
-        </a>
+                <a href="/upload"
+                   class="btn btn-info">
 
-        <a href="/admin">
+                    Upload Dataset
 
-            Admin
+                </a>
 
-        </a>
+                <a href="/activity_logs"
+                   class="btn btn-warning">
 
-        <a href="/logout">
+                    Activity Logs
 
-            Logout
+                </a>
 
-        </a>
+                <a href="/logout"
+                   class="btn btn-danger">
+
+                    Logout
+
+                </a>
+
+            </div>
+
+        </div>
 
     </div>
 
-    <!-- MAIN -->
-    <div class="main-content">
+    <!-- STATISTICS -->
 
-        <!-- HEADER -->
-        <div class="dashboard-header">
+    <div class="row mt-4">
 
-            <div>
+        <div class="col-md-4">
 
-                <h1>
+            <div class="card bg-primary text-white">
 
-                    Admin Dashboard
+                <div class="card-body text-center">
 
-                </h1>
+                    <h4>Total Users</h4>
 
-                <h5>
+                    <h2>
 
-                    Welcome Admin
+                        {{ users|length }}
 
-                </h5>
-
-            </div>
-
-        </div>
-
-        <!-- ADMIN CARDS -->
-        <div class="row mt-4">
-
-            <div class="col-md-4">
-
-                <div class="card dashboard-card bg-primary text-white">
-
-                    <div class="card-body">
-
-                        <h4>
-
-                            Total Users
-
-                        </h4>
-
-                        <h2>
-
-                            {{ users|length }}
-
-                        </h2>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-4">
-
-                <div class="card dashboard-card bg-success text-white">
-
-                    <div class="card-body">
-
-                        <h4>
-
-                            Active System
-
-                        </h4>
-
-                        <h2>
-
-                            Online
-
-                        </h2>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-4">
-
-                <div class="card dashboard-card bg-danger text-white">
-
-                    <div class="card-body">
-
-                        <h4>
-
-                            Database Status
-
-                        </h4>
-
-                        <h2>
-
-                            Connected
-
-                        </h2>
-
-                    </div>
+                    </h2>
 
                 </div>
 
@@ -162,18 +105,107 @@
 
         </div>
 
-        <!-- USERS TABLE -->
-        <div class="card mt-5">
+        <div class="col-md-4">
 
-            <div class="card-body">
+            <div class="card bg-success text-white">
 
-                <h3 class="text-dark">
+                <div class="card-body text-center">
 
-                    Registered Users
+                    <h4>Admin Users</h4>
 
-                </h3>
+                    <h2>
 
-                <table class="table table-bordered mt-4">
+                        1
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4">
+
+            <div class="card bg-info text-white">
+
+                <div class="card-body text-center">
+
+                    <h4>Activity Logs</h4>
+
+                    <h2>
+
+                        {{ logs|length }}
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- USER MANAGEMENT -->
+
+    <div class="card mt-4 shadow">
+
+        <div class="card-body">
+<form method="GET"
+      action="/admin"
+      class="mb-3">
+
+    <div class="row">
+
+        <div class="col-md-8">
+
+            <input
+                type="text"
+                name="search"
+                class="form-control"
+                placeholder="Search User..."
+                value="{{ request.args.get('search','') }}"
+            >
+
+        </div>
+
+        <div class="col-md-4">
+
+            <button
+                type="submit"
+                class="btn btn-primary">
+
+                Search
+
+            </button>
+
+            <a
+                href="/admin"
+                class="btn btn-secondary">
+
+                Reset
+
+            </a>
+
+        </div>
+
+    </div>
+
+</form>
+
+            <h3>
+
+                User Management
+
+            </h3>
+
+            <hr>
+
+            <table
+            class="table table-bordered table-striped">
+
+                <thead class="table-dark">
 
                     <tr>
 
@@ -181,11 +213,15 @@
 
                         <th>Username</th>
 
-                        <th>Password</th>
-
                         <th>Role</th>
 
+                        <th>Action</th>
+
                     </tr>
+
+                </thead>
+
+                <tbody>
 
                     {% for user in users %}
 
@@ -205,13 +241,43 @@
 
                         <td>
 
-                            {{ user[2] }}
+                            {{ user[3] }}
 
                         </td>
 
                         <td>
 
-                            {{ user[3] }}
+                            {% if user[1] == "admin" %}
+
+                                <span
+                                class="badge bg-success">
+
+                                    Protected Admin
+
+                                </span>
+
+                            {% else %}
+
+                                <a
+                                href="/edit_user/{{ user[0] }}"
+                                class="btn btn-warning btn-sm">
+
+                                    Edit
+
+                                </a>
+
+                                <a
+                                href="/delete_user/{{ user[0] }}"
+                                class="btn btn-danger btn-sm"
+                                onclick="return confirm(
+                                'Delete this user?'
+                                )">
+
+                                    Delete
+
+                                </a>
+
+                            {% endif %}
 
                         </td>
 
@@ -219,44 +285,122 @@
 
                     {% endfor %}
 
-                </table>
+                </tbody>
 
-            </div>
+            </table>
 
         </div>
 
-        <!-- ADMIN INSIGHTS -->
-        <div class="card mt-4">
+    </div>
 
-            <div class="card-body">
+    <!-- RECENT LOGS -->
 
-                <h4 class="text-dark">
+    <div class="card mt-4 shadow">
 
-                    System Insights
+        <div class="card-body">
 
-                </h4>
+            <h3>
 
-                <ul class="text-dark">
+                Recent Activity Logs
 
-                    <li>
-                        System successfully connected with SQLite database.
-                    </li>
+            </h3>
 
-                    <li>
-                        User authentication working properly.
-                    </li>
+            <hr>
 
-                    <li>
-                        Machine Learning prediction module active.
-                    </li>
+            <table
+            class="table table-bordered">
 
-                    <li>
-                        Dashboard analytics running successfully.
-                    </li>
+                <thead class="table-secondary">
 
-                </ul>
+                    <tr>
 
-            </div>
+                        <th>ID</th>
+
+                        <th>Username</th>
+
+                        <th>Activity</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for log in logs %}
+
+                    <tr>
+
+                        <td>
+
+                            {{ log[0] }}
+
+                        </td>
+
+                        <td>
+
+                            {{ log[1] }}
+
+                        </td>
+
+                        <td>
+
+                            {{ log[2] }}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <!-- QUICK ACTIONS -->
+
+    <div class="card mt-4 shadow">
+
+        <div class="card-body">
+
+            <h3>
+
+                Quick Actions
+
+            </h3>
+
+            <hr>
+
+            <a href="/prediction"
+               class="btn btn-primary">
+
+                Sales Prediction
+
+            </a>
+
+            <a href="/segmentation"
+               class="btn btn-success">
+
+                Customer Segmentation
+
+            </a>
+
+            <a href="/report"
+               class="btn btn-danger">
+
+                Download PDF Report
+
+            </a>
+
+            <a href="/export_excel"
+               class="btn btn-warning">
+
+                Export Excel
+
+            </a>
 
         </div>
 
@@ -264,10 +408,15 @@
 
 </div>
 
-<footer>
+<footer class="text-center mt-4 mb-3">
 
-    MCA Final Year Major Project |
-    Developed by Pranali Babar
+    <hr>
+
+    Customer Sales & Churn Analysis System
+
+    <br>
+
+    Developed By: Pranali Babar
 
 </footer>
 
