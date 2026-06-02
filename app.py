@@ -2140,8 +2140,7 @@ def not_found(error):
 # ERROR HANDLER 500
 # =========================================
 
-@app.errorhandler(500)
-def internal_error(error):
+##def internal_error(error):
 
     return """
     <h2>
